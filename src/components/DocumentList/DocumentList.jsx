@@ -29,6 +29,34 @@ const DocumentList = () => {
     },
   });
 
+  const showDeleteConfirmation = (documentId) => {
+    toast(
+      ({ closeToast }) => (
+        <div>
+          <p>Are you sure you want to delete this document?</p>
+          <div className="d-flex justify-content-end mt-3">
+            <button
+              className="btn btn-secondary me-2"
+              onClick={closeToast}
+            >
+              No
+            </button>
+            <button
+              className="btn btn-danger"
+              onClick={() => {
+                deleteMutation.mutate(documentId);
+                closeToast();
+              }}
+            >
+              Yes
+            </button>
+          </div>
+        </div>
+      ),
+      { autoClose: false }
+    );
+  };
+
   const columns = [
     {
       name: "Process Number",
@@ -64,7 +92,7 @@ const DocumentList = () => {
           <button
             className="btn-icon bg-danger-subtle text-danger"
             title="delete"
-            onClick={() => deleteMutation.mutate(row.id)}
+            onClick={() => showDeleteConfirmation(row.id)}
           >
             <i className="bi bi-trash"></i>
           </button>
