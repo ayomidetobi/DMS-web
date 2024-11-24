@@ -1,8 +1,9 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-
 import { ToastContainer } from "react-toastify";
-import DocumentList from "./components/DocumentList/DocumentList";
+
 import DocumentDetail from "./components/DocumentDetails/DocumentDetails";
+import DocumentList from "./components/DocumentList/DocumentList";
+import NotFound from "./utils/NotFound";
 
 function App() {
   return (
@@ -11,7 +12,8 @@ function App() {
         <ToastContainer />
         <Routes>
           <Route path="/" element={<DocumentList />} />
-          <Route path="/document/:id" element={<DocumentDetail />} />
+          <Route path="/document/:uid" element={<DocumentDetail />} />
+          <Route path="/404" element={<NotFound />} />
         </Routes>
       </div>
     </Router>

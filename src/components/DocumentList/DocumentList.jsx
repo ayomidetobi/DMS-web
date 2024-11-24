@@ -1,108 +1,32 @@
-import React, { useEffect, useState } from "react";
-import { fetchDocuments, deleteDocumentById } from "../../api/documents";
-import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "react-query";
+import { useState } from "react";
+
+import { useQueryClient } from "@tanstack/react-query";
 import DataTable from "react-data-table-component";
+import { useNavigate, Navigate } from "react-router-dom";
+
+import useDeleteDocument from "../../hooks/useDeleteDocument";
+import useDocuments from "../../hooks/useDocuments";
+import showDeleteConfirmation from "../../utils/DeleteConfirmation";
 import { Spinner } from "../../utils/Spinner";
+
+import { getColumns } from "./DocumentTable";
 const DocumentList = () => {
   const [page, setPage] = useState(1);
+  const [perPage] = useState(5);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const deleteMutation = useDeleteDocument();
 
-  useEffect(() => {
-    fetchDocuments();
-  }, []);
-
-  const { data, isLoading, isError } = useQuery(
-    ["documents", page],
-    () => fetchDocuments(page),
-    { keepPreviousData: true }
-  );
-  const deleteMutation = useMutation(deleteDocumentById, {
-    onSuccess: () => {
-      toast.success("Document deleted successfully");
-      queryClient.invalidateQueries("documents");
-    },
-    onError: () => {
-      toast.error("Failed to delete document");
-    },
-  });
-
-  const showDeleteConfirmation = (documentId) => {
-    toast(
-      ({ closeToast }) => (
-        <div>
-          <p>Are you sure you want to delete this document?</p>
-          <div className="d-flex justify-content-end mt-3">
-            <button
-              className="btn btn-secondary me-2"
-              onClick={closeToast}
-            >
-              No
-            </button>
-            <button
-              className="btn btn-danger"
-              onClick={() => {
-                deleteMutation.mutate(documentId);
-                closeToast();
-              }}
-            >
-              Yes
-            </button>
-          </div>
-        </div>
-      ),
-      { autoClose: false }
-    );
+  const { data, isLoading, isError } = useDocuments(page, perPage);
+  const handleDeleteDocument = (documentId) => {
+    showDeleteConfirmation(() => deleteMutation.mutate(documentId));
   };
 
-  const columns = [
-    {
-      name: "Process Number",
-      selector: (row) => row.process_number,
-      sortable: true,
-    },
-    {
-      name: "Tribunal",
-      selector: (row) => row.tribunal,
-      sortable: true,
-    },
-    {
-      name: "Date",
-      selector: (row) => row.date || "N/A",
-      sortable: true,
-    },
-    {
-      name: "Decision",
-      selector: (row) => row.decision || "N/A",
-      sortable: true,
-    },
-    {
-      name: "Actions",
-      cell: (row) => (
-        <div className="action-buttons">
-          <button
-            className="btn-icon bg-primary-subtle text-primary"
-            title="view"
-            onClick={() => navigate(`/document/${row.id}`)}
-          >
-            <i className="bi bi-eye"></i>
-          </button>
-          <button
-            className="btn-icon bg-danger-subtle text-danger"
-            title="delete"
-            onClick={() => showDeleteConfirmation(row.id)}
-          >
-            <i className="bi bi-trash"></i>
-          </button>
-        </div>
-      ),
-    },
-  ];
+  const columns = getColumns(navigate, handleDeleteDocument);
 
-  if (isLoading) return <Spinner />;
-  if (isError) return <p>Error loading documents</p>;
+  if (isError) {
+    return <Navigate to="/404" />;
+  }
 
   return (
     <div className="container">
@@ -110,13 +34,20 @@ const DocumentList = () => {
       <div className="mx-auto">
         <DataTable
           columns={columns}
-          data={data.results}
+          data={isLoading ? [] : data.results}
           pagination
           paginationServer
-          paginationTotalRows={data.count}
-          onChangePage={(page) => setPage(page)}
+          paginationTotalRows={isLoading ? 0 : data.count}
           highlightOnHover
           striped
+          progressPending={isLoading}
+          progressComponent={<Spinner />}
+          onChangePage={(newPage) => setPage(newPage)}
+          onChangeRowsPerPage={(newPerPage) => {
+            setPage(1);
+            queryClient.invalidateQueries(["documents", newPerPage]);
+          }}
+          onRowClicked={(row) => navigate(`/document/${row.uid}`)}
         />
       </div>
     </div>
