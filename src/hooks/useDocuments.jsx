@@ -1,24 +1,25 @@
-import { useState } from "react";
-
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import axiosInstance from "../../axiosConfig";
 
-const fetchDocuments = async (page, perPage, etag, search) => {
+const fetchDocuments = async (page, perPage, search, orderin) => {
   try {
+    const url = `/documents?page=${page}&page_size=${perPage}&search=${search || ""}?ordering=${orderin}`;
+    const storedEtag = localStorage.getItem(`etag-${url}`);
+
     const response = await axiosInstance.get("/documents", {
       params: {
         page,
         page_size: perPage,
         search: search || "",
+        ordering: orderin || "",
       },
       headers: {
-        ...(etag && { "If-None-Match": etag }),
+        ...(storedEtag && { "If-None-Match": storedEtag }),
       },
     });
 
-    const receivedETag = response.headers["etag"];
-    return { data: response.data, etag: receivedETag };
+    return response.data;
   } catch (error) {
     if (error.response && error.response.status === 304) {
       return null;
@@ -28,27 +29,29 @@ const fetchDocuments = async (page, perPage, etag, search) => {
   }
 };
 
-const useDocuments = (page, perPage) => {
+const useDocuments = (page, perPage, search, orderin) => {
   const queryClient = useQueryClient();
-  const [etag, setEtag] = useState(
-    localStorage.getItem(`documents-etag-page-${page}`) || null
-  );
 
   const { data, isLoading, isError } = useQuery(
-    ["documents", page, perPage],
-    async () => {
-      const result = await fetchDocuments(page, perPage, etag);
-      return result ? result.data : null;
-    },
+    ["documents", page, perPage, search, orderin],
+    () => fetchDocuments(page, perPage, search, orderin),
     {
       keepPreviousData: true,
       staleTime: 1000 * 60 * 2,
       cacheTime: 1000 * 60 * 60 * 24,
       onSuccess: (result) => {
         if (result && result.etag) {
-          setEtag(result.etag);
-          localStorage.setItem(`documents-etag-page-${page}`, result.etag);
-          queryClient.invalidateQueries(["documents", page, perPage]);
+          localStorage.setItem(
+            `/documents?page=${page}&page_size=${perPage}&search=${search}?ordering=${orderin}`,
+            result.etag
+          );
+          queryClient.invalidateQueries([
+            "documents",
+            page,
+            perPage,
+            search,
+            orderin,
+          ]);
         }
       },
       onError: (error) => {

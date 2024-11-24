@@ -1,7 +1,7 @@
 import PropTypes from "prop-types";
 
 const DocumentInformation = ({ document }) => (
-  <div className="card-body p-5">
+  <div className="">
     <h5 className="card-title">{document.process_number}</h5>
     <div className="card-text">
       <strong>Tribunal:</strong> {document.tribunal}

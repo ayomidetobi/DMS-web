@@ -83,7 +83,7 @@ npm run build
 
 - **Dependency on Backend API:** The app relies on a functioning API for its core features.
 - **Limited Offline Support:** No dedicated offline-first features are implemented despite caching capabilities.
-- **Lack of Internationalization (i18n):** The application does not support multiple languages, limiting its reach to non-English speaking users.
+- **Lack of Internationalization (i18n):** The application does not support multiple languages, limiting its reach to some users.
 
 ### Opportunities
 
@@ -96,7 +96,6 @@ npm run build
 
 - **API Downtime:** Backend API unavailability can disrupt the user experience.
 - **Security Risks:** Potential vulnerabilities due to sensitive document data.
-- **Competition:** Similar applications in the market may reduce the adoption rate.
 
 ## Contributing
 

@@ -1,19 +1,22 @@
-import { useState } from "react";
-
 import { useQuery } from "@tanstack/react-query";
 
 import axiosInstance from "../../axiosConfig";
 
-const fetchDocumentById = async (uid, etag) => {
+const fetchDocumentById = async (uid) => {
   try {
-    const response = await axiosInstance.get(`/documents/${uid}`, {
+    const url = `/documents/${uid}`;
+    const storedEtag = localStorage.getItem(`etag-${url}`);
+
+    const response = await axiosInstance.get(url, {
       headers: {
-        ...(etag && { "If-None-Match": etag }),
+        ...(storedEtag && { "If-None-Match": storedEtag }),
       },
     });
+
     return response.data;
   } catch (error) {
     if (error.response && error.response.status === 304) {
+      // If not modified, return null so we use cached data
       return null;
     } else {
       throw error;
@@ -22,22 +25,17 @@ const fetchDocumentById = async (uid, etag) => {
 };
 
 const useDocument = (uid) => {
-  const [etag, setEtag] = useState(null);
-
   const { data, isLoading, isError } = useQuery(
     ["document", uid],
-    async () => {
-      const data = await fetchDocumentById(uid, etag);
-      return data;
-    },
+    () => fetchDocumentById(uid),
     {
       staleTime: 1000 * 60 * 2,
       cacheTime: 1000 * 60 * 60 * 24,
       refetchOnWindowFocus: false,
-      onSuccess: (data) => {
-        if (data && data.etag) {
-          setEtag(data.etag);
-          localStorage.setItem(`document-etag-${uid}`, data.etag);
+      onSuccess: (result) => {
+        if (result && result.etag) {
+          // Store ETag with a unique key based on the request URL
+          localStorage.setItem(`/documents/${uid}`, result.etag);
         }
       },
       onError: (error) => {
@@ -48,4 +46,5 @@ const useDocument = (uid) => {
 
   return { data, isLoading, isError };
 };
+
 export default useDocument;
